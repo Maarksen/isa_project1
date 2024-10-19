@@ -1,0 +1,4 @@
+auth_file
+*.o
+imapcl
+/out_dir

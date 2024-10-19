@@ -1,0 +1,108 @@
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+#include <netdb.h>
+#include <stdio.h>
+#include <string.h>
+#include <iostream>
+
+#include "Imapcl.hpp"
+#include "MessageHandler.hpp"
+
+std::string Imapcl::username;
+std::string Imapcl::password;
+
+using namespace std;
+
+int Imapcl::run(std::string server, int port, std::string certfile, std::string certaddr,
+                bool encryption, bool only_new, bool only_header, std::string auth_file,
+                std::string MAILBOX, std::string out_dir) {
+
+    int sockfd = connect_to_server(server, port);
+    if (sockfd < 0) {
+        return -1;
+    }
+    authenticate(sockfd, auth_file);
+    MH::select_mailbox(sockfd, MAILBOX);
+    MH::fetch_messages(sockfd, out_dir);
+
+}
+
+bool Imapcl::get_credentials(std::string file_name) {
+    FILE* file = fopen(file_name.c_str(), "r");
+    if (file == NULL) {
+        perror("[ERROR] Cannot open file");
+        return false;
+    }
+
+    char line[512];
+    char user[256] = {0};
+    char pass[256] = {0};
+
+    while (fgets(line, sizeof(line), file)) {
+        if (strncmp(line, "username =", 10) == 0) {
+            sscanf(line, "username = %255s", user);
+        } else if (strncmp(line, "password =", 10) == 0) {
+            sscanf(line, "password = %255s", pass);
+        }
+    }
+
+    fclose(file);
+
+    if (strlen(user) == 0 || strlen(pass) == 0) {
+        std::cerr << "[ERROR] Missing username or password in credentials file" << std::endl;
+        return false;
+    }
+
+    username = std::string(user);
+    password = std::string(pass);
+    return true;
+}
+
+int Imapcl::connect_to_server(std::string server, int port) {
+    cout << "[CONNECTING]" << endl;
+
+    int sockfd;
+    struct sockaddr_in server_addr;
+    struct hostent *host;
+
+    host = gethostbyname(server.c_str());
+    if (host == NULL) {
+        perror("[ERROR] gethostbyname failed");
+        return -1;
+    }
+
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sockfd < 0) {
+        perror("[ERROR] socket creation failed");
+        return -1;
+    }
+
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(port);
+    memcpy(&server_addr.sin_addr, host->h_addr, host->h_length);
+
+    if (connect(sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
+        perror("[ERROR] connection failed");
+        close(sockfd);
+        return -1;
+    }
+    cout << "Connected to " << server << " on port " << port << endl;
+    MH::read_response(sockfd);
+
+    return sockfd;
+}
+
+void Imapcl::authenticate(int sockfd, std::string auth_file) {
+    cout << "[AUTHENTICATING]" << endl;
+    
+    if(get_credentials(auth_file) == false) return;
+
+    std::string login_cmd = "a001 LOGIN \"" + username + "\" \"" + password + "\"\r\n";
+    cout << "Sending: " << login_cmd << endl;
+    
+    write(sockfd, login_cmd.c_str(), login_cmd.length());
+    MH::read_response(sockfd);
+}
