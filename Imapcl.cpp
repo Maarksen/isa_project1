@@ -26,7 +26,7 @@ int Imapcl::run(std::string server, int port, std::string certfile, std::string 
     }
     authenticate(sockfd, auth_file);
     MH::select_mailbox(sockfd, MAILBOX);
-    MH::fetch_messages(sockfd, out_dir);
+    MH::fetch_messages(sockfd, out_dir, only_header);
 
 }
 
