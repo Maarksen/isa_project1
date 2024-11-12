@@ -40,6 +40,13 @@ void MH::fetch_messages(int sockfd, std::string out_dir, bool only_header) {
     parse_response(sockfd, out_dir, only_header);
 }
 
+//function to trim whitespaces from the beginning and end of a string
+std::string trim(const std::string &str) {
+    size_t first = str.find_first_not_of(" \t\r\n");
+    size_t last = str.find_last_not_of(" \t\r\n");
+    return (first == std::string::npos || last == std::string::npos) ? "" : str.substr(first, last - first + 1);
+}
+
 void MH::parse_response(int sockfd, std::string out_dir, bool only_header) {
     create_output_dir(out_dir);
 
@@ -54,8 +61,9 @@ void MH::parse_response(int sockfd, std::string out_dir, bool only_header) {
         buffer[n] = '\0';
         std::istringstream response_stream(buffer);
         std::string line;
+        bool header_end_reached = false;
 
-        std::cout << "Server response: " << buffer << std::endl;
+        std::cout << "Server response:\n" << buffer << std::endl;
 
         while (std::getline(response_stream, line)) {
             if (!reading_message) {
@@ -69,28 +77,32 @@ void MH::parse_response(int sockfd, std::string out_dir, bool only_header) {
 
                     current_message = "";
                     reading_message = true;
+                    header_end_reached = false; 
                     continue;
                 }
 
-
-                if (line.find("A003 OK FETCH completed") != std::string::npos) {
+                if (line.find("A003 OK FETCH completed") != std::string::npos && !header_end_reached) {
+                    std::cout << "All messages fetched" << std::endl;
                     return;
                 }
-            } else {
+            } 
+            else {
                 current_message += line + "\n";
 
-                if(only_header && line.empty()) {
-                    std::string filename = out_dir + "/header_message_" + std::to_string(msg_count++) + ".eml";
-                    save_message_to_file(filename, current_message);
+                if(only_header && !header_end_reached) {
+                    if(trim(line).empty()){
+                        std::string filename = out_dir + "/header_message_" + std::to_string(msg_count++) + ".eml";
+                        save_message_to_file(filename, current_message);
 
-                    reading_message = false;
-                    expected_length = 0;
-                    current_message = "";
-                    continue;
+                        reading_message = false;
+                        expected_length = 0;
+                        current_message = "";
+                        header_end_reached = true;
+                        continue;
+                    }
 
                 }
-
-                if (!only_header && current_message.length() >= expected_length) {
+                else if (!only_header && current_message.length() >= expected_length) {
                     std::string filename = out_dir + "/message_" + std::to_string(msg_count++) + ".eml";
                     save_message_to_file(filename, current_message);
 
