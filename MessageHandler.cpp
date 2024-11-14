@@ -34,9 +34,16 @@ void MH::create_output_dir(std::string out_dir) {
 }
 
 void MH::fetch_messages(int sockfd, std::string out_dir, bool only_header) {
-    std::string fetch_cmd = "A003 FETCH 1:* (BODY[])\r\n";
-    
-    write(sockfd, fetch_cmd.c_str(), fetch_cmd.length());
+    std::string fetch_command;
+
+    if (only_header) {
+        fetch_command = "A003 FETCH 1:* (BODY.PEEK[HEADER])\r\n";
+    }
+    else {
+        fetch_command = "A003 FETCH 1:* (BODY[])\r\n";
+    }
+
+    write(sockfd, fetch_command.c_str(), fetch_command.length());
     parse_response(sockfd, out_dir, only_header);
 }
 
@@ -61,7 +68,6 @@ void MH::parse_response(int sockfd, std::string out_dir, bool only_header) {
         buffer[n] = '\0';
         std::istringstream response_stream(buffer);
         std::string line;
-        bool header_end_reached = false;
 
         std::cout << "Server response:\n" << buffer << std::endl;
 
@@ -77,11 +83,10 @@ void MH::parse_response(int sockfd, std::string out_dir, bool only_header) {
 
                     current_message = "";
                     reading_message = true;
-                    header_end_reached = false; 
                     continue;
                 }
 
-                if (line.find("A003 OK FETCH completed") != std::string::npos && !header_end_reached) {
+                if (line.find("A003 OK FETCH completed") != std::string::npos) {
                     std::cout << "All messages fetched" << std::endl;
                     return;
                 }
@@ -89,7 +94,7 @@ void MH::parse_response(int sockfd, std::string out_dir, bool only_header) {
             else {
                 current_message += line + "\n";
 
-                if(only_header && !header_end_reached) {
+                if(only_header) {
                     if(trim(line).empty()){
                         std::string filename = out_dir + "/header_message_" + std::to_string(msg_count++) + ".eml";
                         save_message_to_file(filename, current_message);
@@ -97,12 +102,11 @@ void MH::parse_response(int sockfd, std::string out_dir, bool only_header) {
                         reading_message = false;
                         expected_length = 0;
                         current_message = "";
-                        header_end_reached = true;
                         continue;
                     }
 
                 }
-                else if (!only_header && current_message.length() >= expected_length) {
+                else if (current_message.length() >= expected_length) {
                     std::string filename = out_dir + "/message_" + std::to_string(msg_count++) + ".eml";
                     save_message_to_file(filename, current_message);
 
