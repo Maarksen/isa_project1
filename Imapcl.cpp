@@ -28,9 +28,9 @@ int Imapcl::run(std::string server, int port, std::string certfile, std::string 
     MH::select_mailbox(sockfd, MAILBOX);
 
     if (only_new) {
-        MH::fetch_new_messages(sockfd, out_dir, only_header, MAILBOX);
+        MH::fetch_new_messages(sockfd, out_dir, only_header, server, MAILBOX);
     } else {
-        MH::fetch_messages(sockfd, out_dir, only_header, MAILBOX);
+        MH::fetch_messages(sockfd, out_dir, only_header, server, MAILBOX);
     }
 
     return 1;

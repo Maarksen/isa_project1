@@ -35,7 +35,7 @@ void MH::create_output_dir(std::string out_dir) {
 
 
 //function to fetch all messages
-void MH::fetch_messages(int sockfd, std::string out_dir, bool only_header, std::string mailbox) {
+void MH::fetch_messages(int sockfd, std::string out_dir, bool only_header, std::string server, std::string mailbox) {
     std::string fetch_command;
 
     if (only_header) {
@@ -46,11 +46,11 @@ void MH::fetch_messages(int sockfd, std::string out_dir, bool only_header, std::
     }
 
     write(sockfd, fetch_command.c_str(), fetch_command.length());
-    parse_fetch_response(sockfd, out_dir, only_header, false, mailbox);
+    parse_fetch_response(sockfd, out_dir, only_header, false, server, mailbox);
 }
 
 //function to fetch only new messages
-void MH::fetch_new_messages(int sockfd, std::string out_dir, bool only_header, std::string mailbox) {
+void MH::fetch_new_messages(int sockfd, std::string out_dir, bool only_header, std::string server, std::string mailbox) {
     //looking for only previously unseen messages
     std::string search_command = "A003 SEARCH UNSEEN\r\n";
     std::string fetch_command;
@@ -76,7 +76,7 @@ void MH::fetch_new_messages(int sockfd, std::string out_dir, bool only_header, s
 
     write(sockfd, fetch_command.c_str(), fetch_command.length());
 
-    parse_fetch_response(sockfd, out_dir, only_header, true, mailbox);
+    parse_fetch_response(sockfd, out_dir, only_header, true, server, mailbox);
 }
 
 //helper function to trim whitespaces from the beginning and end of a string
@@ -87,7 +87,9 @@ std::string trim(const std::string &str) {
 }
 
 //function to parse the response from the FETCH command
-void MH::parse_fetch_response(int sockfd, std::string out_dir, bool only_header, bool only_new, std::string mailbox) {
+void MH::parse_fetch_response(int sockfd, std::string out_dir, bool only_header, bool only_new, 
+                              std::string server, std::string mailbox) {
+
     create_output_dir(out_dir);
 
     char buffer[4096];
@@ -124,7 +126,7 @@ void MH::parse_fetch_response(int sockfd, std::string out_dir, bool only_header,
                 //when Fetch completed is detected outside of the message body, print the number of messages fetched
                 if (line.find("A003 OK Fetch completed") != std::string::npos) {
                     if (only_header) {
-                        std::cout << "[INFO] " << msg_count << " message headers fetched from mailbox " << mailbox << "." << std::endl;
+                        std::cout << "[INFO] " << msg_count << " header messages fetched from mailbox " << mailbox << "." << std::endl;
                     }
                     else if (only_new) {
                         std::cout << "[INFO] " << msg_count << " new messages fetched from mailbox " << mailbox << "." << std::endl;
@@ -142,7 +144,13 @@ void MH::parse_fetch_response(int sockfd, std::string out_dir, bool only_header,
                     //if we are only fetching headers and the line is empty, which means the header part is over,
                     //or if we reached the expected length of the message save the message to a file
                     if(trim(line).empty() || current_message.length() >= expected_length) {
-                        std::string filename = out_dir + "/header_message_" + std::to_string(++msg_count) + ".eml";
+                        std::string filename;
+                        if(only_new) {
+                            filename = out_dir + "/new_h_" + server + "_" + mailbox + "_" + std::to_string(++msg_count) + ".eml";
+                        }
+                        else {
+                            filename = out_dir + "/h_" + server + "_" + mailbox + "_" + std::to_string(++msg_count) + ".eml";
+                        }
                         save_message_to_file(filename, current_message);
 
                         parsing_message = false;
@@ -154,7 +162,14 @@ void MH::parse_fetch_response(int sockfd, std::string out_dir, bool only_header,
                 }
                 //if we reached the expected length of the message, save it to a file
                 else if (current_message.length() >= expected_length) {
-                    std::string filename = out_dir + "/message_" + std::to_string(++msg_count) + ".eml";
+                    std::string filename;
+                    if (only_new) {
+                        filename = out_dir + "/new_m_" + server + "_" + mailbox + "_" + std::to_string(++msg_count) + ".eml";
+                    }
+                    else {
+                        filename = out_dir + "/m_" + server + "_" + mailbox + "_" + std::to_string(++msg_count) + ".eml";
+                    }
+
                     save_message_to_file(filename, current_message);
 
                     parsing_message = false;
