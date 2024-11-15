@@ -98,6 +98,5 @@ int main(int argc, char *argv[]){
         printUsage();
         return 1;
     }
-    std::cout << "new flag a header flag " << only_new << " " << only_header << std::endl;
     Imapcl::run(server, port, certfile, certaddr, encryption, only_new, only_header, auth_file, MAILBOX, out_dir);
 }

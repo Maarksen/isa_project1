@@ -12,8 +12,13 @@ void MH::read_response(int sockfd) {
     int n = read(sockfd, buffer, sizeof(buffer) - 1);
     if (n > 0) {
         buffer[n] = '\0';
-        printf("Server response: %s\n", buffer);
     }
+    std::string buffer_str = buffer;
+    if(buffer_str.find(" BAD ") != std::string::npos || buffer_str.find(" NO ") != std::string::npos) {
+        std::cerr << "[ERROR] " << buffer_str << std::endl;
+        exit(1);
+    }
+    printf("Server response: %s\n", buffer);
 }
 
 //function to select the mailbox
