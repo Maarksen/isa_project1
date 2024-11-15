@@ -94,7 +94,7 @@ void MH::parse_fetch_response(int sockfd, std::string out_dir, bool only_header,
     int n;
     int msg_count = 0;
     std::string current_message;
-    int expected_length = 0;
+    unsigned int expected_length = 0;
     bool parsing_message = false;
 
     while ((n = read(sockfd, buffer, sizeof(buffer) - 1)) > 0) {
@@ -140,8 +140,8 @@ void MH::parse_fetch_response(int sockfd, std::string out_dir, bool only_header,
 
                 if(only_header) {
                     //if we are only fetching headers and the line is empty, which means the header part is over,
-                    //save the message to a file
-                    if(trim(line).empty()){
+                    //or if we reached the expected length of the message save the message to a file
+                    if(trim(line).empty() || current_message.length() >= expected_length) {
                         std::string filename = out_dir + "/header_message_" + std::to_string(++msg_count) + ".eml";
                         save_message_to_file(filename, current_message);
 
@@ -202,6 +202,7 @@ std::string MH::parse_search_response(int sockfd) {
     if (n < 0) {
         perror("[ERROR] Error reading server response");
     }
+    return "";
 }
 
 //function to save the message to a file

@@ -59,7 +59,7 @@ bool Imapcl::get_credentials(std::string file_name) {
     fclose(file);
 
     if (strlen(user) == 0 || strlen(pass) == 0) {
-        std::cerr << "[ERROR] Missing username or password in credentials file" << std::endl;
+        std::cerr << "[ERROR] Missing username or password in credentials file." << std::endl;
         return false;
     }
 
@@ -78,13 +78,13 @@ int Imapcl::connect_to_server(std::string server, int port) {
 
     host = gethostbyname(server.c_str());
     if (host == NULL) {
-        perror("[ERROR] gethostbyname failed");
+        perror("[ERROR] Failed to resolve hostname.");
         return -1;
     }
 
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd < 0) {
-        perror("[ERROR] socket creation failed");
+        perror("[ERROR] Failed to create socket.");
         return -1;
     }
 
@@ -93,7 +93,7 @@ int Imapcl::connect_to_server(std::string server, int port) {
     memcpy(&server_addr.sin_addr, host->h_addr, host->h_length);
 
     if (connect(sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
-        perror("[ERROR] connection failed");
+        perror("[ERROR] Failed to connect.");
         close(sockfd);
         return -1;
     }
@@ -109,9 +109,9 @@ void Imapcl::authenticate(int sockfd, std::string auth_file) {
     
     if(get_credentials(auth_file) == false) return;
 
-    std::string login_cmd = "a001 LOGIN \"" + username + "\" \"" + password + "\"\r\n";
-    cout << "Sending: " << login_cmd << endl;
+    std::string login_command = "a001 LOGIN \"" + username + "\" \"" + password + "\"\r\n";
+    cout << "Sending: " << login_command << endl;
     
-    write(sockfd, login_cmd.c_str(), login_cmd.length());
+    write(sockfd, login_command.c_str(), login_command.length());
     MH::read_response(sockfd);
 }
