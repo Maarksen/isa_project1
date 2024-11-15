@@ -15,7 +15,7 @@ void MH::read_response(int sockfd) {
     }
     std::string buffer_str = buffer;
     if(buffer_str.find(" BAD ") != std::string::npos || buffer_str.find(" NO ") != std::string::npos) {
-        std::cerr << "[ERROR] " << buffer_str << std::endl;
+        std::cerr << "[ERROR] Server response: " << buffer_str << std::endl;
         exit(1);
     }
     printf("Server response: %s\n", buffer);
@@ -88,7 +88,13 @@ void MH::fetch_new_messages(int sockfd, std::string out_dir, bool only_header, s
 std::string trim(const std::string &str) {
     size_t first = str.find_first_not_of(" \t\r\n");
     size_t last = str.find_last_not_of(" \t\r\n");
-    return (first == std::string::npos || last == std::string::npos) ? "" : str.substr(first, last - first + 1);
+
+    if(first == std::string::npos || last == std::string::npos){
+        return "";
+    }
+    else{
+        return str.substr(first, last - first + 1);
+    }
 }
 
 //function to parse the response from the FETCH command
@@ -140,6 +146,12 @@ void MH::parse_fetch_response(int sockfd, std::string out_dir, bool only_header,
                         std::cout << "[INFO] " << msg_count << " messages fetched from mailbox " << mailbox << "." << std::endl;
                     }
                     return;
+                }
+
+                //if the server response contains NO or BAD, print error message and exit
+                if (line.find("NO") != std::string::npos || line.find("BAD") != std::string::npos){
+                    std::cerr << "[ERROR] Server response: " << line << std::endl;
+                    exit(1);
                 }
             } 
             else {
@@ -203,6 +215,13 @@ std::string MH::parse_search_response(int sockfd) {
         std::string line;
 
         while (std::getline(response, line)) {
+
+            //if the server response contains NO or BAD, print error message and exit
+            if (line.find("NO") != std::string::npos || line.find("BAD") != std::string::npos){
+                std::cerr << "[ERROR] Server response: " << line << std::endl;
+                exit(1);
+            }
+
             size_t search_uids = line.find(keyword_search);
 
             if (search_uids != std::string::npos) {
