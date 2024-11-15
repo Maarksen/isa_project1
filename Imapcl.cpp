@@ -26,10 +26,17 @@ int Imapcl::run(std::string server, int port, std::string certfile, std::string 
     }
     authenticate(sockfd, auth_file);
     MH::select_mailbox(sockfd, MAILBOX);
-    MH::fetch_messages(sockfd, out_dir, only_header);
 
+    if (only_new) {
+        MH::fetch_new_messages(sockfd, out_dir, only_header, MAILBOX);
+    } else {
+        MH::fetch_messages(sockfd, out_dir, only_header, MAILBOX);
+    }
+
+    return 1;
 }
 
+//function to get the credentials from the auth_file
 bool Imapcl::get_credentials(std::string file_name) {
     FILE* file = fopen(file_name.c_str(), "r");
     if (file == NULL) {
@@ -61,6 +68,7 @@ bool Imapcl::get_credentials(std::string file_name) {
     return true;
 }
 
+//function to connect to the server
 int Imapcl::connect_to_server(std::string server, int port) {
     cout << "[CONNECTING]" << endl;
 
@@ -95,6 +103,7 @@ int Imapcl::connect_to_server(std::string server, int port) {
     return sockfd;
 }
 
+//function to authenticate the user
 void Imapcl::authenticate(int sockfd, std::string auth_file) {
     cout << "[AUTHENTICATING]" << endl;
     

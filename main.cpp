@@ -44,7 +44,7 @@ int main(int argc, char *argv[]){
     bool only_header = false;
 
     int opt;
-    while ((opt = getopt(argc, argv, "p:Tc:C:nha:b:o:")) != -1){
+    while ((opt = getopt(argc, argv, "p:Tc:C:nha:b:o:")) != -1) {
         switch(opt){
             case 'p':
                 port = atoi(optarg);
@@ -60,6 +60,7 @@ int main(int argc, char *argv[]){
                 break;
             case 'n':
                 only_new = true;
+                break;
             case 'h':
                 only_header = true;
                 break;
@@ -79,6 +80,7 @@ int main(int argc, char *argv[]){
         }
     }
 
+    //check non-optional arguments
     if (optind >= argc) {
         std::cerr << "[ERROR] server is required.\n";
         printUsage();
@@ -96,6 +98,6 @@ int main(int argc, char *argv[]){
         printUsage();
         return 1;
     }
-
+    std::cout << "new flag a header flag " << only_new << " " << only_header << std::endl;
     Imapcl::run(server, port, certfile, certaddr, encryption, only_new, only_header, auth_file, MAILBOX, out_dir);
 }
