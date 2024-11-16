@@ -1,3 +1,8 @@
+/*
+author: Marek Buch
+login: xbuchm02
+*/
+
 #include "MessageHandler.hpp"
 
 //function to read the server response

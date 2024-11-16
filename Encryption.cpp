@@ -1,3 +1,8 @@
+/*
+author: Marek Buch
+login: xbuchm02
+*/
+
 #include "Encryption.hpp"
 #include "MessageHandler.hpp"
 

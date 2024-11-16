@@ -1,3 +1,8 @@
+/*
+author: Marek Buch
+login: xbuchm02
+*/
+
 #include <iostream>
 #include <string>
 #include <vector>

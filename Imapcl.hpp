@@ -1,3 +1,8 @@
+/*
+author: Marek Buch
+login: xbuchm02
+*/
+
 #ifndef IMAPCL_HPP
 #define IMAPCL_HPP
 

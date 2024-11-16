@@ -1,3 +1,8 @@
+/*
+author: Marek Buch
+login: xbuchm02
+*/
+
 #ifndef ENCRYPTION_HPP
 #define ENCRYPTION_HPP
 

@@ -1,3 +1,8 @@
+/*
+author: Marek Buch
+login: xbuchm02
+*/
+
 #ifndef MESSAGEHANDLER_HPP
 #define MESSAGEHANDLER_HPP
 

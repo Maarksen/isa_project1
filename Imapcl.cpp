@@ -1,3 +1,9 @@
+/*
+author: Marek Buch
+login: xbuchm02
+
+*/
+
 #include "Imapcl.hpp"
 #include "MessageHandler.hpp"
 #include "Encryption.hpp"
