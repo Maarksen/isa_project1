@@ -1,6 +1,15 @@
 #ifndef IMAPCL_HPP
 #define IMAPCL_HPP
 
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+#include <netdb.h>
+#include <stdio.h>
+#include <string.h>
+#include <iostream>
 #include <string>
 
 class Imapcl {

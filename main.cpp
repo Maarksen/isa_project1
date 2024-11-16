@@ -32,7 +32,7 @@ int main(int argc, char *argv[]){
     }
 
     string server;
-    int port;
+    int port = 143;
     string certfile;
     string certaddr = "/etc/ssl/certs";
     string auth_file;
@@ -51,6 +51,7 @@ int main(int argc, char *argv[]){
                 break;
             case 'T':
                 encryption = true;
+                port = 993;
                 break;
             case 'c':
                 certfile = optarg;

@@ -1,9 +1,3 @@
-#include <iostream>
-#include <fstream>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <filesystem>
-#include <sstream>
 #include "MessageHandler.hpp"
 
 //function to read the server response
@@ -31,11 +25,11 @@ void MH::select_mailbox(int sockfd, const std::string mailbox) {
 
 //function to create the output directory
 void MH::create_output_dir(std::string out_dir) {
-    if(std::filesystem::exists(out_dir)) {
-        std::filesystem::remove_all(out_dir);
+    if(!std::filesystem::exists(out_dir)) {
+        std::filesystem::create_directory(out_dir);
+        std::cout << "Created output directory: " << out_dir << std::endl;
     }
-    std::filesystem::create_directory(out_dir);
-    std::cout << "Created output directory: " << out_dir << std::endl;
+    std::cout << "Directory already exists." << std::endl;
 }
 
 
@@ -198,7 +192,7 @@ void MH::parse_fetch_response(int sockfd, std::string out_dir, bool only_header,
     }
 
     if (n < 0) {
-        perror("[ERROR] Error reading server response.");
+        std::cerr << "[ERROR] Error reading server response." << std::endl;
     }
 }
 
@@ -239,13 +233,21 @@ std::string MH::parse_search_response(int sockfd) {
     }
 
     if (n < 0) {
-        perror("[ERROR] Error reading server response");
+        std::cerr << "[ERROR] Error reading server response" << std::endl;
     }
     return "";
 }
 
 //function to save the message to a file
 void MH::save_message_to_file(std::string filename, std::string message) {
+    std::ofstream check_file(filename);
+
+    //check if the directory already contains the file
+    if(check_file.is_open()) {
+        std::cout << "Deleted " << filename << "." << std::endl;
+        std::filesystem::remove(filename);
+    }
+
     std::ofstream outfile(filename);
     if (outfile.is_open()) {
         outfile << message;

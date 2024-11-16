@@ -1,15 +1,6 @@
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <unistd.h>
-#include <netdb.h>
-#include <stdio.h>
-#include <string.h>
-#include <iostream>
-
 #include "Imapcl.hpp"
 #include "MessageHandler.hpp"
+#include "Encryption.hpp"
 
 std::string Imapcl::username;
 std::string Imapcl::password;
@@ -20,11 +11,16 @@ int Imapcl::run(std::string server, int port, std::string certfile, std::string 
                 bool encryption, bool only_new, bool only_header, std::string auth_file,
                 std::string MAILBOX, std::string out_dir) {
 
-    int sockfd = connect_to_server(server, port);
-    if (sockfd < 0) {
-        return -1;
+    int sockfd;
+    SSL *ssl = nullptr;
+    if (encryption) {
+        ssl = Encrypt::ssl_connect_to_server(certaddr, server, port);
     }
-    authenticate(sockfd, auth_file);
+    else{
+        sockfd = connect_to_server(server, port);
+        authenticate(sockfd, auth_file);
+    }
+
     MH::select_mailbox(sockfd, MAILBOX);
 
     if (only_new) {
@@ -40,7 +36,7 @@ int Imapcl::run(std::string server, int port, std::string certfile, std::string 
 bool Imapcl::get_credentials(std::string file_name) {
     FILE* file = fopen(file_name.c_str(), "r");
     if (file == NULL) {
-        perror("[ERROR] Cannot open file");
+        std::cerr << "[ERROR] Cannot open file." << std::endl;
         return false;
     }
 
@@ -78,13 +74,13 @@ int Imapcl::connect_to_server(std::string server, int port) {
 
     host = gethostbyname(server.c_str());
     if (host == NULL) {
-        perror("[ERROR] Failed to resolve hostname.");
+        std::cerr << "[ERROR] Failed to resolve hostname." << std::endl;
         return -1;
     }
 
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd < 0) {
-        perror("[ERROR] Failed to create socket.");
+        std::cerr << "[ERROR] Failed to create socket." << std::endl;
         return -1;
     }
 
@@ -93,7 +89,7 @@ int Imapcl::connect_to_server(std::string server, int port) {
     memcpy(&server_addr.sin_addr, host->h_addr, host->h_length);
 
     if (connect(sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
-        perror("[ERROR] Failed to connect.");
+        std::cerr << "[ERROR] Failed to connect." << std::endl;
         close(sockfd);
         return -1;
     }

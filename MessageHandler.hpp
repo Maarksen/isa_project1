@@ -5,6 +5,12 @@
 #include <unistd.h>
 #include <string.h>
 #include <string>
+#include <iostream>
+#include <fstream>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <filesystem>
+#include <sstream>
 
 class MH {
     public:
