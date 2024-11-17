@@ -1,7 +1,6 @@
 /*
 author: Marek Buch
 login: xbuchm02
-
 */
 
 #include "Imapcl.hpp"
@@ -21,18 +20,20 @@ int Imapcl::run(std::string server, int port, std::string certfile, std::string 
     SSL *ssl = nullptr;
     if (encryption) {
         ssl = Encrypt::ssl_connect_to_server(certaddr, server, port);
+        get_credentials(auth_file);
+        Encrypt::ssl_authenticate(ssl, auth_file, username, password);
     }
     else{
         sockfd = connect_to_server(server, port);
         authenticate(sockfd, auth_file);
     }
 
-    MH::select_mailbox(sockfd, MAILBOX);
+    MH::select_mailbox(sockfd, ssl, MAILBOX, encryption);
 
     if (only_new) {
-        MH::fetch_new_messages(sockfd, out_dir, only_header, server, MAILBOX);
+        MH::fetch_new_messages(sockfd, ssl, out_dir, only_header, server, MAILBOX, encryption);
     } else {
-        MH::fetch_messages(sockfd, out_dir, only_header, server, MAILBOX);
+        MH::fetch_messages(sockfd, ssl, out_dir, only_header, server, MAILBOX, encryption);
     }
 
     return 1;

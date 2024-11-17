@@ -8,7 +8,6 @@ login: xbuchm02
 
 //function to read the server response
 void Encrypt::read_encrypted_response(SSL *ssl) {
-    std::cout << "[READING RESPONSE]" << std::endl;
     char buffer[1024];
     int n = SSL_read(ssl, buffer, sizeof(buffer) - 1);
     if (n > 0) {
@@ -19,7 +18,7 @@ void Encrypt::read_encrypted_response(SSL *ssl) {
         std::cerr << "[ERROR] Server response: " << buffer_str << std::endl;
         exit(1);
     }
-    printf("Server response: %s\n", buffer);
+    std::cout << "Server response: " <<  buffer << std::endl;
 }
 
 //function to initialize the SSL and verify certificates
@@ -106,6 +105,17 @@ SSL *Encrypt::ssl_connect_to_server(std::string certaddr, std::string server, in
 
     std::cout << "Connected with " << SSL_get_cipher(ssl) << " encryption" << std::endl;
     return ssl;
+}
+
+//function to authenticate the user
+void Encrypt::ssl_authenticate(SSL *ssl, std::string auth_file, std::string username, std::string password) {
+    std::cout << "[AUTHENTICATING]" << std::endl;
+
+    std::string login_command = "a001 LOGIN \"" + username + "\" \"" + password + "\"\r\n";
+    std::cout << "Sending: " << login_command << std::endl;
+    
+    SSL_write(ssl, login_command.c_str(), login_command.length());
+    Encrypt::read_encrypted_response(ssl);
 }
 
 //function to cleanup the SSL connection after an error

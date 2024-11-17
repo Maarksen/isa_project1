@@ -4,6 +4,7 @@ login: xbuchm02
 */
 
 #include "MessageHandler.hpp"
+#include "Encryption.hpp"
 
 //function to read the server response
 void MH::read_response(int sockfd) {
@@ -21,11 +22,18 @@ void MH::read_response(int sockfd) {
 }
 
 //function to select the mailbox
-void MH::select_mailbox(int sockfd, const std::string mailbox) {
+void MH::select_mailbox(int sockfd, SSL *ssl, const std::string mailbox, bool encryption) {
     std::string select_cmd = "A002 SELECT " + mailbox + "\r\n";
     
-    write(sockfd, select_cmd.c_str(), select_cmd.length());
-    read_response(sockfd);
+    if (encryption) {
+        std::cout << "toto je command " << select_cmd << std::endl;
+        SSL_write(ssl, select_cmd.c_str(), select_cmd.length());
+        Encrypt::read_encrypted_response(ssl);
+    }
+    else {
+        write(sockfd, select_cmd.c_str(), select_cmd.length());
+        read_response(sockfd);
+    }
 }
 
 //function to create the output directory
@@ -39,7 +47,8 @@ void MH::create_output_dir(std::string out_dir) {
 
 
 //function to fetch all messages
-void MH::fetch_messages(int sockfd, std::string out_dir, bool only_header, std::string server, std::string mailbox) {
+void MH::fetch_messages(int sockfd, SSL *ssl, std::string out_dir, bool only_header, std::string server,
+                        std::string mailbox, bool encryption) {
     std::string fetch_command;
 
     if (only_header) {
@@ -49,17 +58,33 @@ void MH::fetch_messages(int sockfd, std::string out_dir, bool only_header, std::
         fetch_command = "A003 FETCH 1:* (BODY[])\r\n";
     }
 
-    write(sockfd, fetch_command.c_str(), fetch_command.length());
+    if (encryption) {
+        SSL_write(ssl, fetch_command.c_str(), fetch_command.length());
+        Encrypt::read_encrypted_response(ssl);
+    }
+    else {
+        write(sockfd, fetch_command.c_str(), fetch_command.length());
+        MH::read_response(sockfd);
+    }
+
     parse_fetch_response(sockfd, out_dir, only_header, false, server, mailbox);
 }
 
 //function to fetch only new messages
-void MH::fetch_new_messages(int sockfd, std::string out_dir, bool only_header, std::string server, std::string mailbox) {
+void MH::fetch_new_messages(int sockfd, SSL *ssl, std::string out_dir, bool only_header, std::string server,
+                            std::string mailbox, bool encryption) {
     //looking for only previously unseen messages
     std::string search_command = "A003 SEARCH UNSEEN\r\n";
     std::string fetch_command;
 
-    write(sockfd, search_command.c_str(), search_command.length());
+    if (encryption) {
+        SSL_write(ssl, search_command.c_str(), search_command.length());
+        Encrypt::read_encrypted_response(ssl);
+    }
+    else {
+        write(sockfd, search_command.c_str(), search_command.length());
+        MH::read_response(sockfd);
+    }
 
     //get the uids of the unseen messages
     std::string unseen_uids = parse_search_response(sockfd);

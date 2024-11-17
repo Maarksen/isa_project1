@@ -27,6 +27,7 @@ class Encrypt {
 
         static SSL_CTX *initialize_openssl(std::string certaddr);
         static SSL *ssl_connect_to_server(std::string certaddr, std::string hostname, int port);
+        static void ssl_authenticate(SSL *ssl, std::string auth_file, std::string username, std::string password);
 
         static void cleanup(SSL *ssl, int sockfd, SSL_CTX *ctx);
 
