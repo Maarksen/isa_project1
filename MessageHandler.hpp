@@ -29,9 +29,9 @@ class MH {
         static void fetch_new_messages(int sockfd, SSL *ssl, std::string out_dir, bool only_header, std::string server,
                                        std::string mailbox, bool encryption);
         
-        static void parse_fetch_response(int sockfd, std::string out_dir, bool only_header,
-                                         bool only_new, std::string server, std::string mailbox);
-        static std::string parse_search_response(int sockfd);
+        static void parse_fetch_response(int sockfd,SSL *ssl, std::string out_dir, bool only_header,
+                                         bool only_new, bool encryption, std::string server, std::string mailbox);
+        static std::string parse_search_response(int sockfd, SSL *ssl, bool encryption);
 
         static void save_message_to_file(std::string filena, std::string message);
         

@@ -18,7 +18,6 @@ void MH::read_response(int sockfd) {
         std::cerr << "[ERROR] Server response: " << buffer_str << std::endl;
         exit(1);
     }
-    printf("Server response: %s\n", buffer);
 }
 
 //function to select the mailbox
@@ -60,14 +59,15 @@ void MH::fetch_messages(int sockfd, SSL *ssl, std::string out_dir, bool only_hea
 
     if (encryption) {
         SSL_write(ssl, fetch_command.c_str(), fetch_command.length());
-        Encrypt::read_encrypted_response(ssl);
+        //Encrypt::read_encrypted_response(ssl);
     }
     else {
         write(sockfd, fetch_command.c_str(), fetch_command.length());
-        MH::read_response(sockfd);
+        //MH::read_response(sockfd);
     }
 
-    parse_fetch_response(sockfd, out_dir, only_header, false, server, mailbox);
+    std::cout << "fetchol som spravy, volam parse" << std::endl;
+    parse_fetch_response(sockfd, ssl, out_dir, only_header, false, encryption, server, mailbox);
 }
 
 //function to fetch only new messages
@@ -79,15 +79,15 @@ void MH::fetch_new_messages(int sockfd, SSL *ssl, std::string out_dir, bool only
 
     if (encryption) {
         SSL_write(ssl, search_command.c_str(), search_command.length());
-        Encrypt::read_encrypted_response(ssl);
+        //Encrypt::read_encrypted_response(ssl);
     }
     else {
         write(sockfd, search_command.c_str(), search_command.length());
-        MH::read_response(sockfd);
+        //MH::read_response(sockfd);
     }
 
     //get the uids of the unseen messages
-    std::string unseen_uids = parse_search_response(sockfd);
+    std::string unseen_uids = parse_search_response(sockfd, ssl, encryption);
     std::cout << "Unseen UIDs: " << unseen_uids << std::endl;
 
     //no new messages available
@@ -105,7 +105,7 @@ void MH::fetch_new_messages(int sockfd, SSL *ssl, std::string out_dir, bool only
 
     write(sockfd, fetch_command.c_str(), fetch_command.length());
 
-    parse_fetch_response(sockfd, out_dir, only_header, true, server, mailbox);
+    parse_fetch_response(sockfd, ssl, out_dir, only_header, true, encryption, server, mailbox);
 }
 
 //helper function to trim whitespaces from the beginning and end of a string
@@ -122,8 +122,8 @@ std::string trim(const std::string &str) {
 }
 
 //function to parse the response from the FETCH command
-void MH::parse_fetch_response(int sockfd, std::string out_dir, bool only_header, bool only_new, 
-                              std::string server, std::string mailbox) {
+void MH::parse_fetch_response(int sockfd, SSL *ssl, std::string out_dir, bool only_header, bool only_new,
+                              bool encryption, std::string server, std::string mailbox) {
 
     create_output_dir(out_dir);
 
@@ -134,7 +134,14 @@ void MH::parse_fetch_response(int sockfd, std::string out_dir, bool only_header,
     unsigned int expected_length = 0;
     bool parsing_message = false;
 
-    while ((n = read(sockfd, buffer, sizeof(buffer) - 1)) > 0) {
+    while (true) {
+        std::cout << "parsing fetch" << std::endl;
+        if (encryption) {
+            n = SSL_read(ssl, buffer, sizeof(buffer) - 1);
+        }
+        else {
+            n = read(sockfd, buffer, sizeof(buffer) -1);
+        }
         buffer[n] = '\0';
         std::istringstream response(buffer);
         std::string line;
@@ -152,6 +159,7 @@ void MH::parse_fetch_response(int sockfd, std::string out_dir, bool only_header,
                 if (keyword_fetch != std::string::npos && start_len != std::string::npos && end_len != std::string::npos) {
                     std::string length_str = line.substr(start_len + 1, end_len - start_len - 1);
                     expected_length = std::stoi(length_str);
+                    std::cout << "spadol som do ifu" << std::endl;
 
                     current_message = "";
                     parsing_message = true;
@@ -227,13 +235,24 @@ void MH::parse_fetch_response(int sockfd, std::string out_dir, bool only_header,
 }
 
 //function to parse the response from the SEARCH command and return the uids
-std::string MH::parse_search_response(int sockfd) {
+std::string MH::parse_search_response(int sockfd, SSL *ssl, bool encryption) {
     int n;
     char buffer[1024];
     std::string uids;
     std::string keyword_search = "SEARCH";
 
-    while ((n = read(sockfd, buffer, sizeof(buffer) - 1)) > 0) {
+    while (true) {
+
+        std::cout << "parsing search" << std::endl;
+        if (encryption) {
+            std::cout << "mam ssl" << std::endl;
+            n = SSL_read(ssl, buffer, sizeof(buffer) - 1);
+        }
+        else {
+            n = read(sockfd, buffer, sizeof(buffer) -1);
+        }
+        std::cout << "mam nko" << std::endl;
+
         buffer[n] = '\0';
         std::istringstream response(buffer);
         std::string line;
@@ -270,12 +289,9 @@ std::string MH::parse_search_response(int sockfd) {
 
 //function to save the message to a file
 void MH::save_message_to_file(std::string filename, std::string message) {
-    std::ofstream check_file(filename);
-
-    //check if the directory already contains the file
-    if(check_file.is_open()) {
-        std::cout << "Deleted " << filename << "." << std::endl;
+    if (std::filesystem::exists(filename)) {
         std::filesystem::remove(filename);
+        std::cout << "Deleted existing file: " << filename << std::endl;
     }
 
     std::ofstream outfile(filename);
