@@ -1,6 +1,6 @@
 CXX = g++
 CXXFLAGS = -std=c++17 -Wall -Wextra -pedantic
-LDFLAGS = -L/usr/local/lib -lssl -lcrypto
+LDFLAGS = -lssl -lcrypto
 
 SRC_DIR := ./
 SRCS := $(wildcard $(SRC_DIR)*.cpp)
