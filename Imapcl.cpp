@@ -21,7 +21,7 @@ int Imapcl::run(std::string server, int port, std::string certfile, std::string 
     if (encryption) {
         ssl = Encrypt::ssl_connect_to_server(certaddr, certfile, server, port);
         get_credentials(auth_file);
-        Encrypt::ssl_authenticate(ssl, auth_file, username, password);
+        Encrypt::ssl_authenticate(ssl, username, password);
     }
     else{
         sockfd = connect_to_server(server, port);
@@ -73,7 +73,6 @@ bool Imapcl::get_credentials(std::string file_name) {
 
 //function to connect to the server
 int Imapcl::connect_to_server(std::string server, int port) {
-    cout << "[CONNECTING]" << endl;
 
     int sockfd;
     struct sockaddr_in server_addr;
@@ -100,7 +99,6 @@ int Imapcl::connect_to_server(std::string server, int port) {
         close(sockfd);
         return -1;
     }
-    cout << "Connected to " << server << " on port " << port << endl;
     MH::read_response(sockfd);
 
     return sockfd;
@@ -108,7 +106,6 @@ int Imapcl::connect_to_server(std::string server, int port) {
 
 //function to authenticate the user
 void Imapcl::authenticate(int sockfd, std::string auth_file) {
-    cout << "[AUTHENTICATING]" << endl;
     
     if(get_credentials(auth_file) == false) return;
 

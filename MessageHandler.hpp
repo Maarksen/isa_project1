@@ -33,7 +33,7 @@ class MH {
                                          bool only_new, bool encryption, std::string server, std::string mailbox);
         static std::string parse_search_response(int sockfd, SSL *ssl, bool encryption);
 
-        static void save_message_to_file(std::string filena, std::string message);
+        static bool save_message_to_file(std::string filena, std::string message);
         static void logout(int sockfd);
         
     private:

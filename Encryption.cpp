@@ -16,9 +16,9 @@ void Encrypt::read_encrypted_response(SSL *ssl) {
     std::string buffer_str = buffer;
     if(buffer_str.find(" BAD ") != std::string::npos || buffer_str.find(" NO ") != std::string::npos) {
         std::cerr << "[ERROR] Server response: " << buffer_str << std::endl;
+        Encrypt::ssl_logout(ssl);
         exit(1);
     }
-    std::cout << "Server response: " <<  buffer << std::endl;
 }
 
 //function to initialize the SSL and verify certificates
@@ -59,7 +59,6 @@ SSL_CTX *Encrypt::initialize_openssl(std::string certaddr, std::string certfile)
 
 //function to establish an SSL connection
 SSL *Encrypt::ssl_connect_to_server(std::string certaddr, std::string certfile, std::string server, int port) {
-    std::cout << "[CONNECTING]" << std::endl;
     
     struct hostent *host;
     struct sockaddr_in server_addr;
@@ -112,13 +111,11 @@ SSL *Encrypt::ssl_connect_to_server(std::string certaddr, std::string certfile, 
 
     Encrypt::read_encrypted_response(ssl);
 
-    std::cout << "Connected with " << SSL_get_cipher(ssl) << " encryption" << std::endl;
     return ssl;
 }
 
 //function to authenticate the user
-void Encrypt::ssl_authenticate(SSL *ssl, std::string auth_file, std::string username, std::string password) {
-    std::cout << "[AUTHENTICATING]" << std::endl;
+void Encrypt::ssl_authenticate(SSL *ssl, std::string username, std::string password) {
 
     std::string login_command = "a001 LOGIN \"" + username + "\" \"" + password + "\"\r\n";
     

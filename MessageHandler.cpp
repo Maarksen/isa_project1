@@ -39,9 +39,7 @@ void MH::select_mailbox(int sockfd, SSL *ssl, const std::string mailbox, bool en
 void MH::create_output_dir(std::string out_dir) {
     if(!std::filesystem::exists(out_dir)) {
         std::filesystem::create_directory(out_dir);
-        std::cout << "Created output directory: " << out_dir << std::endl;
     }
-    std::cout << "Directory already exists." << std::endl;
 }
 
 
@@ -83,7 +81,6 @@ void MH::fetch_new_messages(int sockfd, SSL *ssl, std::string out_dir, bool only
 
     //get the uids of the unseen messages
     std::string unseen_uids = parse_search_response(sockfd, ssl, encryption);
-    std::cout << "Unseen UIDs: " << unseen_uids << std::endl;
 
     //no new messages available
     if (unseen_uids.empty()) {
@@ -122,7 +119,7 @@ void MH::parse_fetch_response(int sockfd, SSL *ssl, std::string out_dir, bool on
 
     create_output_dir(out_dir);
 
-    char buffer[4096];
+    char buffer[8192];
     int n;
     int msg_count = 0;
     std::string current_message;
@@ -142,7 +139,7 @@ void MH::parse_fetch_response(int sockfd, SSL *ssl, std::string out_dir, bool on
         std::istringstream response(buffer);
         std::string line;
 
-        std::cout << "Server response:\n" << buffer << std::endl;
+        //std::cout << "Server response:\n" << buffer << std::endl;
 
         while (std::getline(response, line)) {
             if (!parsing_message) {
@@ -183,7 +180,7 @@ void MH::parse_fetch_response(int sockfd, SSL *ssl, std::string out_dir, bool on
                 }
 
                 //if the server response contains NO or BAD, print error message and exit
-                if (line.find("NO") != std::string::npos || line.find("BAD") != std::string::npos){
+                if (line.find(" NO ") != std::string::npos || line.find(" BAD ") != std::string::npos){
                     std::cerr << "[ERROR] Server response: " << line << std::endl;
                     logout(sockfd);
                     exit(1);
@@ -193,6 +190,10 @@ void MH::parse_fetch_response(int sockfd, SSL *ssl, std::string out_dir, bool on
                 current_message += line + "\n";
                 if(current_message.find("Message-ID:") != std::string::npos && !found_message_id) {
                     message_id = line.substr(line.find("Message-ID:") + 11);
+                    size_t pos;
+                    while ((pos = message_id.find('/')) != std::string::npos) {
+                        message_id.erase(pos, 1);
+                    }
                     found_message_id = true;
                 }
 
@@ -202,11 +203,12 @@ void MH::parse_fetch_response(int sockfd, SSL *ssl, std::string out_dir, bool on
                     if(trim(line).empty() || current_message.length() >= expected_length) {
                         std::string filename;
                         if(only_new) {
-                            filename = out_dir + "/new_h_" + server + "_" + mailbox + "_" + std::to_string(++msg_count) + ".eml";
+                            filename = out_dir + "/new_h_" + std::to_string(msg_count++) + "_" + server + "_" + mailbox + "_" + ".eml";
                         }
                         else {
-                            filename = out_dir + "/h_" + server + "_" + mailbox + "_" + std::to_string(++msg_count) + ".eml";
+                            filename = out_dir + "/h_" + std::to_string(msg_count++) + "_" + server + "_" + mailbox + ".eml";
                         }
+                        
                         save_message_to_file(filename, current_message);
 
                         parsing_message = false;
@@ -220,12 +222,10 @@ void MH::parse_fetch_response(int sockfd, SSL *ssl, std::string out_dir, bool on
                 else if (current_message.length() >= expected_length) {
                     std::string filename;
                     if (only_new) {
-                        filename = out_dir + "/new_m_" + server + "_" + mailbox + "_" + message_id + ".eml";
-                        msg_count++;
+                        filename = out_dir + "/new_m_" + std::to_string(msg_count++) + "_" + server + "_" + mailbox + "_" + message_id + ".eml";
                     }
                     else {
-                        filename = out_dir + "/m_" + server + "_" + mailbox + "_" + message_id + ".eml";
-                        msg_count++;
+                        filename = out_dir + "/m_" + std::to_string(msg_count++) + "_" + server + "_" + mailbox + "_" + message_id + ".eml";
                     }
 
                     save_message_to_file(filename, current_message);
@@ -234,6 +234,7 @@ void MH::parse_fetch_response(int sockfd, SSL *ssl, std::string out_dir, bool on
                     found_message_id = false;
                     expected_length = 0;
                     current_message = "";
+                    continue;
                 }
             }
         }
@@ -248,7 +249,7 @@ void MH::parse_fetch_response(int sockfd, SSL *ssl, std::string out_dir, bool on
 //function to parse the response from the SEARCH command and return the uids
 std::string MH::parse_search_response(int sockfd, SSL *ssl, bool encryption) {
     int n;
-    char buffer[1024];
+    char buffer[8192];
     std::string uids;
     std::string keyword_search = "SEARCH";
 
@@ -267,7 +268,7 @@ std::string MH::parse_search_response(int sockfd, SSL *ssl, bool encryption) {
         while (std::getline(response, line)) {
 
             //if the server response contains NO or BAD, print error message and exit
-            if (line.find("NO") != std::string::npos || line.find("BAD") != std::string::npos){
+            if (line.find(" NO ") != std::string::npos || line.find(" BAD ") != std::string::npos){
                 std::cerr << "[ERROR] Server response: " << line << std::endl;
                 exit(1);
             }
@@ -295,19 +296,19 @@ std::string MH::parse_search_response(int sockfd, SSL *ssl, bool encryption) {
 }
 
 //function to save the message to a file
-void MH::save_message_to_file(std::string filename, std::string message) {
+bool MH::save_message_to_file(std::string filename, std::string message) {
     if (std::filesystem::exists(filename)) {
-        std::filesystem::remove(filename);
-        std::cout << "Deleted existing file: " << filename << std::endl;
+        //return false;
     }
 
     std::ofstream outfile(filename);
     if (outfile.is_open()) {
         outfile << message;
         outfile.close();
-        std::cout << "Saved message to " << filename << std::endl;
+        return true;
     } 
     else {
+
         std::cerr << "[ERROR] Unable to open file: " << filename << "." << std::endl;
         exit(1);
     }
