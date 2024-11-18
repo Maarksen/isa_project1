@@ -48,6 +48,8 @@ int main(int argc, char *argv[]){
     bool only_new = false;
     bool only_header = false;
 
+    bool encrypt_args = false;
+
     int opt;
     while ((opt = getopt(argc, argv, "p:Tc:C:nha:b:o:")) != -1) {
         switch(opt){
@@ -60,9 +62,11 @@ int main(int argc, char *argv[]){
                 break;
             case 'c':
                 certfile = optarg;
+                encrypt_args = true;
                 break;
             case 'C':
                 certaddr = optarg;
+                encrypt_args = true;
                 break;
             case 'n':
                 only_new = true;
@@ -104,6 +108,13 @@ int main(int argc, char *argv[]){
         printUsage();
         return 1;
     }
+
+    if (!encryption && encrypt_args) {
+        std::cerr << "[ERROR] Argument -T is requires for arguments -C and -c.\n";
+        printUsage();
+        return 1;
+    }
+
     Imapcl::run(server, port, certfile, certaddr, encryption, only_new, only_header, auth_file, MAILBOX, out_dir);
 
     return 0;
