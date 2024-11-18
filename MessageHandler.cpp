@@ -101,7 +101,7 @@ void MH::fetch_new_messages(int sockfd, SSL *ssl, std::string out_dir, bool only
 }
 
 //helper function to trim whitespaces from the beginning and end of a string
-std::string trim(const std::string &str) {
+std::string trim(std::string str) {
     size_t first = str.find_first_not_of(" \t\r\n");
     size_t last = str.find_last_not_of(" \t\r\n");
 
@@ -138,8 +138,6 @@ void MH::parse_fetch_response(int sockfd, SSL *ssl, std::string out_dir, bool on
         buffer[n] = '\0';
         std::istringstream response(buffer);
         std::string line;
-
-        //std::cout << "Server response:\n" << buffer << std::endl;
 
         while (std::getline(response, line)) {
             if (!parsing_message) {
@@ -297,9 +295,6 @@ std::string MH::parse_search_response(int sockfd, SSL *ssl, bool encryption) {
 
 //function to save the message to a file
 bool MH::save_message_to_file(std::string filename, std::string message) {
-    if (std::filesystem::exists(filename)) {
-        //return false;
-    }
 
     std::ofstream outfile(filename);
     if (outfile.is_open()) {

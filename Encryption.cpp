@@ -88,6 +88,7 @@ SSL *Encrypt::ssl_connect_to_server(std::string certaddr, std::string certfile, 
         cleanup(ssl, sockfd, ctx);
     }
 
+    //creating the SSL object
     ssl = SSL_new(ctx);
     if (!ssl) {
         std::cerr << "[ERROR] Failed to create SSL object" << std::endl;
@@ -95,14 +96,14 @@ SSL *Encrypt::ssl_connect_to_server(std::string certaddr, std::string certfile, 
         cleanup(ssl, sockfd, ctx);;
     }
 
-    //connecting the ssl object with the socket
+    //connecting the SSL object with the socket
     if (SSL_set_fd(ssl, sockfd) == 0) {
         std::cerr << "[ERROR] Failed to connect SSL with socket." << std::endl;
         ERR_print_errors_fp(stderr);
         cleanup(ssl, sockfd, ctx);
     }
 
-    //ssl handshake
+    //SSL handshake
     if (SSL_connect(ssl) <= 0) {
         std::cerr << "[ERROR] SSL handshake failed." << std::endl;
         ERR_print_errors_fp(stderr);
@@ -140,7 +141,9 @@ void Encrypt::cleanup(SSL *ssl, int sockfd, SSL_CTX *ctx) {
 
 //function to logout from the server
 void Encrypt::ssl_logout(SSL *ssl) {
+
     std::string logout_command = "a002 LOGOUT\r\n";
+    
     SSL_write(ssl, logout_command.c_str(), logout_command.length());
     Encrypt::read_encrypted_response(ssl);
 }
