@@ -39,6 +39,72 @@ int Imapcl::run(std::string server, int port, std::string certfile, std::string 
     return 0;
 }
 
+// int Imapcl::interactive(std::string server, int port, std::string certfile, std::string certaddr,
+//                 bool encryption, bool only_new, bool only_header, std::string auth_file,
+//                 std::string MAILBOX, std::string out_dir) {
+//     std::cout << "[INFO] Interactive mode started. Type 'EXIT' to quit." << std::endl;
+
+//     std::string command;
+
+//     int sockfd;
+//     SSL *ssl = nullptr;
+//     if (encryption) {
+//         ssl = Encrypt::ssl_connect_to_server(certaddr, certfile, server, port);
+//         get_credentials(auth_file);
+//         Encrypt::ssl_authenticate(ssl, username, password);
+//     }
+//     else{
+//         sockfd = connect_to_server(server, port);
+//         authenticate(sockfd, auth_file);
+//     }
+
+//     MH::select_mailbox(sockfd, ssl, MAILBOX, encryption);
+
+//     while (true) {
+//         std::getline(std::cin, command);
+
+//         std::istringstream iss(command);
+//         std::string main_command, argument;
+//         iss >> main_command >> argument;
+
+//         std::cout << "[INFO] Command: " << main_command << " Argument: " << argument << std::endl;
+
+//         if (main_command == "DOWNLOADNEW") {
+//             std::cout << "[INFO] Downloading new messages." << std::endl;
+//             if(!argument.empty()){
+//                 std::cout << "[INFO] Downloading new messages from mailbox " << argument << "." << std::endl;
+//                 MH::select_mailbox(sockfd, ssl, argument, encryption);
+//                 MH::fetch_new_messages(sockfd, ssl, out_dir, only_header, server, argument, encryption);
+//             }
+//             else{
+//                 std::cout << "[INFO] Downloading new messages from mailbox " << MAILBOX << "." << std::endl;
+//                 MH::fetch_new_messages(sockfd, ssl, out_dir, only_header, server, MAILBOX, encryption);
+//             }
+
+//         }
+//         else if (main_command == "DOWNLOADALL") {
+//             std::cout << "[INFO] Downloading all messages." << std::endl;
+//             if(!argument.empty()){
+//                 std::cout << "[INFO] Downloading all messages from mailbox " << argument << "." << std::endl;
+//                 MH::select_mailbox(sockfd, ssl, argument, encryption);
+//                 MH::fetch_messages(sockfd, ssl, out_dir, only_header, server, argument, encryption);
+//             }
+//             else{
+//                 std::cout << "[INFO] Downloading all messages from mailbox " << MAILBOX << "." << std::endl;
+//                 MH::fetch_messages(sockfd, ssl, out_dir, only_header, server, MAILBOX, encryption);
+//             }
+//         }
+//         else if (main_command == "QUIT") {
+//             break;
+//         } 
+//         else {
+//             std::cout << "[INFO] Unknown command: " << command << std::endl;
+//         }
+//     }
+
+//     return 0;
+// }
+
 //function to get the credentials from the auth_file
 bool Imapcl::get_credentials(std::string file_name) {
     FILE* file = fopen(file_name.c_str(), "r");

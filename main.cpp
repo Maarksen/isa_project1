@@ -48,10 +48,12 @@ int main(int argc, char *argv[]){
     bool only_new = false;
     bool only_header = false;
 
+    //bool interactive = false;
+
     bool encrypt_args = false;
 
     int opt;
-    while ((opt = getopt(argc, argv, "p:Tc:C:nha:b:o:")) != -1) {
+    while ((opt = getopt(argc, argv, "p:Tc:C:nha:b:o:i")) != -1) {
         switch(opt){
             case 'p':
                 port = atoi(optarg);
@@ -83,6 +85,9 @@ int main(int argc, char *argv[]){
             case 'o':
                 out_dir = optarg;
                 break;
+            // case 'i':
+            //     interactive = true;
+            //     break;
             default:
                 printUsage();
                 return 1;
@@ -115,7 +120,11 @@ int main(int argc, char *argv[]){
         return 1;
     }
 
-    Imapcl::run(server, port, certfile, certaddr, encryption, only_new, only_header, auth_file, MAILBOX, out_dir);
+    // if (interactive){
+    //     Imapcl::interactive(server, port, certfile, certaddr, encryption, only_new, only_header, auth_file, MAILBOX, out_dir);
+    //     return 0;
+    // }
 
+    Imapcl::run(server, port, certfile, certaddr, encryption, only_new, only_header, auth_file, MAILBOX, out_dir);
     return 0;
 }

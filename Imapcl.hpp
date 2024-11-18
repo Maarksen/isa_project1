@@ -22,6 +22,10 @@ class Imapcl {
         static int run(std::string server, int port, std::string certfile, std::string certaddr,
                     bool encryption, bool only_new, bool only_header, std::string auth_file, std::string MAILBOX,
                     std::string out_dir);
+        
+        // static int interactive(std::string server, int port, std::string certfile, std::string certaddr,
+        //             bool encryption, bool only_new, bool only_header, std::string auth_file, std::string MAILBOX,
+        //             std::string out_dir);
 
         static bool get_credentials(std::string file_name);
         

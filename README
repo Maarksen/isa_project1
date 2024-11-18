@@ -1,0 +1,13 @@
+## Marek Buch - xbuchm02
+
+18/11/2024
+
+This applications allows it's user to read emails using protocol IMAP4rev1 (RFC 3501). When executed, messages are downloaded according to the specifications. The application can be specified to download all messages, only headers of the messages or download only new messages and save them to separate files. This can be specified in the command line as shown in the example.
+
+known limitations:
+    - The program does not have the ability to decode messages.
+    - Compatibility with case insensitive commands.
+    - All messages get fetched, even though some of them may already be fetched from previous calls.
+
+example:
+    ./imapcl eva.fit.vutbr.cz -a ../auth_file -n -b isa_test -o ../out_dir
