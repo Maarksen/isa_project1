@@ -38,7 +38,7 @@ int main(int argc, char *argv[]){
 
     string server;
     int port = 143;
-    string certfile;
+    string certfile = "";
     string certaddr = "/etc/ssl/certs";
     string auth_file;
     string MAILBOX = "INBOX";
@@ -105,4 +105,6 @@ int main(int argc, char *argv[]){
         return 1;
     }
     Imapcl::run(server, port, certfile, certaddr, encryption, only_new, only_header, auth_file, MAILBOX, out_dir);
+
+    return 0;
 }

@@ -19,7 +19,7 @@ int Imapcl::run(std::string server, int port, std::string certfile, std::string 
     int sockfd;
     SSL *ssl = nullptr;
     if (encryption) {
-        ssl = Encrypt::ssl_connect_to_server(certaddr, server, port);
+        ssl = Encrypt::ssl_connect_to_server(certaddr, certfile, server, port);
         get_credentials(auth_file);
         Encrypt::ssl_authenticate(ssl, auth_file, username, password);
     }
@@ -36,7 +36,7 @@ int Imapcl::run(std::string server, int port, std::string certfile, std::string 
         MH::fetch_messages(sockfd, ssl, out_dir, only_header, server, MAILBOX, encryption);
     }
 
-    return 1;
+    return 0;
 }
 
 //function to get the credentials from the auth_file
@@ -113,7 +113,6 @@ void Imapcl::authenticate(int sockfd, std::string auth_file) {
     if(get_credentials(auth_file) == false) return;
 
     std::string login_command = "a001 LOGIN \"" + username + "\" \"" + password + "\"\r\n";
-    cout << "Sending: " << login_command << endl;
     
     write(sockfd, login_command.c_str(), login_command.length());
     MH::read_response(sockfd);

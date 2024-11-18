@@ -22,7 +22,7 @@ void Encrypt::read_encrypted_response(SSL *ssl) {
 }
 
 //function to initialize the SSL and verify certificates
-SSL_CTX *Encrypt::initialize_openssl(std::string certaddr) {
+SSL_CTX *Encrypt::initialize_openssl(std::string certaddr, std::string certfile) {
     SSL_library_init();
     SSL_load_error_strings();
     OpenSSL_add_ssl_algorithms();
@@ -36,11 +36,21 @@ SSL_CTX *Encrypt::initialize_openssl(std::string certaddr) {
     }
 
     //verify certificates
-    if(!SSL_CTX_load_verify_locations(ctx, NULL, certaddr.c_str())) {
-        std::cerr << "[ERROR] Failed to load verify locations." << std::endl;
-        ERR_print_errors_fp(stderr);
-        SSL_CTX_free(ctx);
-        exit(1);
+    if(certfile == ""){
+        if(!SSL_CTX_load_verify_locations(ctx, NULL, certaddr.c_str())) {
+            std::cerr << "[ERROR] Failed to load verify locations." << std::endl;
+            ERR_print_errors_fp(stderr);
+            SSL_CTX_free(ctx);
+            exit(1);
+        }
+    }
+    else {
+        if(!SSL_CTX_load_verify_locations(ctx, certfile.c_str(), certaddr.c_str())) {
+            std::cerr << "[ERROR] Failed to load verify locations." << std::endl;
+            ERR_print_errors_fp(stderr);
+            SSL_CTX_free(ctx);
+            exit(1);
+        }
     }
 
     SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, NULL);
@@ -48,7 +58,7 @@ SSL_CTX *Encrypt::initialize_openssl(std::string certaddr) {
 }
 
 //function to establish an SSL connection
-SSL *Encrypt::ssl_connect_to_server(std::string certaddr, std::string server, int port) {
+SSL *Encrypt::ssl_connect_to_server(std::string certaddr, std::string certfile, std::string server, int port) {
     std::cout << "[CONNECTING]" << std::endl;
     
     struct hostent *host;
@@ -56,7 +66,7 @@ SSL *Encrypt::ssl_connect_to_server(std::string certaddr, std::string server, in
     int sockfd;
     SSL *ssl = nullptr;
 
-    SSL_CTX *ctx = Encrypt::initialize_openssl(certaddr);
+    SSL_CTX *ctx = Encrypt::initialize_openssl(certaddr, certfile);
 
     host = gethostbyname(server.c_str());
     if (host == NULL) {
@@ -78,7 +88,6 @@ SSL *Encrypt::ssl_connect_to_server(std::string certaddr, std::string server, in
         std::cerr << "[ERROR] Failed to connect." << std::endl;
         cleanup(ssl, sockfd, ctx);
     }
-    //MH::read_response(sockfd);
 
     ssl = SSL_new(ctx);
     if (!ssl) {
@@ -112,7 +121,6 @@ void Encrypt::ssl_authenticate(SSL *ssl, std::string auth_file, std::string user
     std::cout << "[AUTHENTICATING]" << std::endl;
 
     std::string login_command = "a001 LOGIN \"" + username + "\" \"" + password + "\"\r\n";
-    std::cout << "Sending: " << login_command << std::endl;
     
     SSL_write(ssl, login_command.c_str(), login_command.length());
     Encrypt::read_encrypted_response(ssl);
@@ -131,4 +139,11 @@ void Encrypt::cleanup(SSL *ssl, int sockfd, SSL_CTX *ctx) {
     }
     EVP_cleanup();
     exit(1);
+}
+
+//function to logout from the server
+void Encrypt::ssl_logout(SSL *ssl) {
+    std::string logout_command = "a002 LOGOUT\r\n";
+    SSL_write(ssl, logout_command.c_str(), logout_command.length());
+    Encrypt::read_encrypted_response(ssl);
 }

@@ -34,6 +34,7 @@ class MH {
         static std::string parse_search_response(int sockfd, SSL *ssl, bool encryption);
 
         static void save_message_to_file(std::string filena, std::string message);
+        static void logout(int sockfd);
         
     private:
 

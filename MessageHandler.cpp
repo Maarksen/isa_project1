@@ -16,6 +16,7 @@ void MH::read_response(int sockfd) {
     std::string buffer_str = buffer;
     if(buffer_str.find(" BAD ") != std::string::npos || buffer_str.find(" NO ") != std::string::npos) {
         std::cerr << "[ERROR] Server response: " << buffer_str << std::endl;
+        MH::logout(sockfd);
         exit(1);
     }
 }
@@ -25,7 +26,6 @@ void MH::select_mailbox(int sockfd, SSL *ssl, const std::string mailbox, bool en
     std::string select_cmd = "A002 SELECT " + mailbox + "\r\n";
     
     if (encryption) {
-        std::cout << "toto je command " << select_cmd << std::endl;
         SSL_write(ssl, select_cmd.c_str(), select_cmd.length());
         Encrypt::read_encrypted_response(ssl);
     }
@@ -59,14 +59,11 @@ void MH::fetch_messages(int sockfd, SSL *ssl, std::string out_dir, bool only_hea
 
     if (encryption) {
         SSL_write(ssl, fetch_command.c_str(), fetch_command.length());
-        //Encrypt::read_encrypted_response(ssl);
     }
     else {
         write(sockfd, fetch_command.c_str(), fetch_command.length());
-        //MH::read_response(sockfd);
     }
 
-    std::cout << "fetchol som spravy, volam parse" << std::endl;
     parse_fetch_response(sockfd, ssl, out_dir, only_header, false, encryption, server, mailbox);
 }
 
@@ -79,11 +76,9 @@ void MH::fetch_new_messages(int sockfd, SSL *ssl, std::string out_dir, bool only
 
     if (encryption) {
         SSL_write(ssl, search_command.c_str(), search_command.length());
-        //Encrypt::read_encrypted_response(ssl);
     }
     else {
         write(sockfd, search_command.c_str(), search_command.length());
-        //MH::read_response(sockfd);
     }
 
     //get the uids of the unseen messages
@@ -131,11 +126,12 @@ void MH::parse_fetch_response(int sockfd, SSL *ssl, std::string out_dir, bool on
     int n;
     int msg_count = 0;
     std::string current_message;
+    std::string message_id;
     unsigned int expected_length = 0;
     bool parsing_message = false;
+    bool found_message_id = false;
 
     while (true) {
-        std::cout << "parsing fetch" << std::endl;
         if (encryption) {
             n = SSL_read(ssl, buffer, sizeof(buffer) - 1);
         }
@@ -159,7 +155,6 @@ void MH::parse_fetch_response(int sockfd, SSL *ssl, std::string out_dir, bool on
                 if (keyword_fetch != std::string::npos && start_len != std::string::npos && end_len != std::string::npos) {
                     std::string length_str = line.substr(start_len + 1, end_len - start_len - 1);
                     expected_length = std::stoi(length_str);
-                    std::cout << "spadol som do ifu" << std::endl;
 
                     current_message = "";
                     parsing_message = true;
@@ -177,17 +172,29 @@ void MH::parse_fetch_response(int sockfd, SSL *ssl, std::string out_dir, bool on
                     else {
                         std::cout << "[INFO] " << msg_count << " messages fetched from mailbox " << mailbox << "." << std::endl;
                     }
+                    if (encryption) {
+                        Encrypt::ssl_logout(ssl);
+                    }
+                    else {
+                        MH::logout(sockfd);
+                    }
+
                     return;
                 }
 
                 //if the server response contains NO or BAD, print error message and exit
                 if (line.find("NO") != std::string::npos || line.find("BAD") != std::string::npos){
                     std::cerr << "[ERROR] Server response: " << line << std::endl;
+                    logout(sockfd);
                     exit(1);
                 }
             } 
             else {
                 current_message += line + "\n";
+                if(current_message.find("Message-ID:") != std::string::npos && !found_message_id) {
+                    message_id = line.substr(line.find("Message-ID:") + 11);
+                    found_message_id = true;
+                }
 
                 if(only_header) {
                     //if we are only fetching headers and the line is empty, which means the header part is over,
@@ -213,15 +220,18 @@ void MH::parse_fetch_response(int sockfd, SSL *ssl, std::string out_dir, bool on
                 else if (current_message.length() >= expected_length) {
                     std::string filename;
                     if (only_new) {
-                        filename = out_dir + "/new_m_" + server + "_" + mailbox + "_" + std::to_string(++msg_count) + ".eml";
+                        filename = out_dir + "/new_m_" + server + "_" + mailbox + "_" + message_id + ".eml";
+                        msg_count++;
                     }
                     else {
-                        filename = out_dir + "/m_" + server + "_" + mailbox + "_" + std::to_string(++msg_count) + ".eml";
+                        filename = out_dir + "/m_" + server + "_" + mailbox + "_" + message_id + ".eml";
+                        msg_count++;
                     }
 
                     save_message_to_file(filename, current_message);
 
                     parsing_message = false;
+                    found_message_id = false;
                     expected_length = 0;
                     current_message = "";
                 }
@@ -231,6 +241,7 @@ void MH::parse_fetch_response(int sockfd, SSL *ssl, std::string out_dir, bool on
 
     if (n < 0) {
         std::cerr << "[ERROR] Error reading server response." << std::endl;
+        exit(1);
     }
 }
 
@@ -242,16 +253,12 @@ std::string MH::parse_search_response(int sockfd, SSL *ssl, bool encryption) {
     std::string keyword_search = "SEARCH";
 
     while (true) {
-
-        std::cout << "parsing search" << std::endl;
         if (encryption) {
-            std::cout << "mam ssl" << std::endl;
             n = SSL_read(ssl, buffer, sizeof(buffer) - 1);
         }
         else {
             n = read(sockfd, buffer, sizeof(buffer) -1);
         }
-        std::cout << "mam nko" << std::endl;
 
         buffer[n] = '\0';
         std::istringstream response(buffer);
@@ -302,5 +309,13 @@ void MH::save_message_to_file(std::string filename, std::string message) {
     } 
     else {
         std::cerr << "[ERROR] Unable to open file: " << filename << "." << std::endl;
+        exit(1);
     }
+}
+
+//function to logout from the server
+void MH::logout(int sockfd) {
+    std::string logout_command = "a002 LOGOUT\r\n";
+    write(sockfd, logout_command.c_str(), logout_command.length());
+    MH::read_response(sockfd);
 }
