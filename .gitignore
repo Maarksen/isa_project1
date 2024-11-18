@@ -1,3 +1,4 @@
 auth_file
 *.o
 imapcl
+*.eml

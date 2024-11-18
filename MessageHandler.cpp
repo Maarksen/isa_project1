@@ -201,13 +201,20 @@ void MH::parse_fetch_response(int sockfd, SSL *ssl, std::string out_dir, bool on
                     if(trim(line).empty() || current_message.length() >= expected_length) {
                         std::string filename;
                         if(only_new) {
-                            filename = out_dir + "/new_h_" + std::to_string(msg_count++) + "_" + server + "_" + mailbox + "_" + ".eml";
+                            filename = "new_h_" + std::to_string(msg_count++) + "_" + server + "_" + mailbox + "_" + ".eml";
                         }
                         else {
-                            filename = out_dir + "/h_" + std::to_string(msg_count++) + "_" + server + "_" + mailbox + ".eml";
+                            filename = "h_" + std::to_string(msg_count++) + "_" + server + "_" + mailbox + ".eml";
                         }
+
+                        size_t pos;
+                        while ((pos = filename.find('/')) != std::string::npos) {
+                            filename.erase(pos, 1);
+                        }
+
+                        std::string filename_dir = out_dir + "/" + filename;
                         
-                        save_message_to_file(filename, current_message);
+                        save_message_to_file(filename_dir, current_message);
 
                         parsing_message = false;
                         expected_length = 0;
@@ -220,13 +227,20 @@ void MH::parse_fetch_response(int sockfd, SSL *ssl, std::string out_dir, bool on
                 else if (current_message.length() >= expected_length) {
                     std::string filename;
                     if (only_new) {
-                        filename = out_dir + "/new_m_" + std::to_string(msg_count++) + "_" + server + "_" + mailbox + "_" + message_id + ".eml";
+                        filename = "new_m_" + std::to_string(msg_count++) + "_" + server + "_" + mailbox + "_" + message_id + ".eml";
                     }
                     else {
-                        filename = out_dir + "/m_" + std::to_string(msg_count++) + "_" + server + "_" + mailbox + "_" + message_id + ".eml";
+                        filename ="m_" + std::to_string(msg_count++) + "_" + server + "_" + mailbox + "_" + message_id + ".eml";
                     }
 
-                    save_message_to_file(filename, current_message);
+                    size_t pos;
+                    while ((pos = filename.find('/')) != std::string::npos) {
+                        filename.erase(pos, 1);
+                    }
+
+                    std::string filename_dir = out_dir + "/" + filename;
+
+                    save_message_to_file(filename_dir, current_message);
 
                     parsing_message = false;
                     found_message_id = false;
